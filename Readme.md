@@ -1,4 +1,4 @@
-<div style="text-align:center"><h1>《智能计算系统 AI Computing System》</h1></div>
+<h1 align="center">《智能计算系统 AI Computing System》</h1>
 
 书籍购买地址:https://item.jd.com/12815882.html
 
