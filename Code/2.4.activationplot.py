@@ -31,5 +31,9 @@ plt.plot(x, y_tanh, label='tanh')
 plt.plot(x, y_ReLU, label='ReLU')
 plt.plot(x, y_PReLU, label='PReLU')
 plt.plot(x, y_ELU, label='ELU')
-plt.legend(['sigmoid','tanh', 'ReLU', 'PReLU', 'ELU'])
+plt.legend(['sigmoid', 'tanh', 'ReLU', 'PReLU', 'ELU'])
+# print 
+print(np.min(y_sigmoid),np.min(y_tanh),np.min(y_ReLU), np.min(y_PReLU), np.min(y_ELU))
+print(np.max(y_sigmoid),np.max(y_tanh),np.max(y_ReLU), np.max(y_PReLU), np.max(y_ELU))
 plt.show()
+
