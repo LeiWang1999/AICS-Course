@@ -4,8 +4,8 @@
 //
 
 #include <glog/logging.h>
-#include <easyml/neural_network/net.h>
-#include <easyml/util/util.h>
+#include "net.h"
+#include "../util/util.h"
 #include <iostream>
 
 namespace easyml {

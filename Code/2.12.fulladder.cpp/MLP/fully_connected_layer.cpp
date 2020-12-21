@@ -1,4 +1,4 @@
-#include <easyml/neural_network/fully_connected_layer.h>
+#include "fully_connected_layer.h"
 #include <glog/logging.h>
 
 namespace easyml {

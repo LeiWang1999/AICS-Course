@@ -9,7 +9,7 @@
 
 #include <memory>
 #include <opencv2/core/core.hpp>
-#include <easyml/neural_network/layer.h>
+#include "layer.h"
 
 namespace easyml {
 namespace nn {

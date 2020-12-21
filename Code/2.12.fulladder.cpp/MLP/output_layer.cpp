@@ -1,4 +1,4 @@
-#include <easyml/neural_network/output_layer.h>
+#include "output_layer.h"
 #include <glog/logging.h>
 
 namespace easyml {

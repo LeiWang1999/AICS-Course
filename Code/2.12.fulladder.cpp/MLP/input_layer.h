@@ -7,8 +7,8 @@
 #define EASYML_NERUALNETWORK_INPUT_LAYER_H
 
 
-#include <easyml/common.h>
-#include <easyml/neural_network/layer.h>
+#include "common.h"
+#include "layer.h"
 
 namespace easyml {
 namespace nn {

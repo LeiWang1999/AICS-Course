@@ -143,6 +143,33 @@ depend:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/2_12_fulladder_cpp.dir/build.make CMakeFiles/2_12_fulladder_cpp.dir/build
 .PHONY : 2_12_fulladder_cpp/fast
 
+data/binary_adder.o: data/binary_adder.cpp.o
+
+.PHONY : data/binary_adder.o
+
+# target to build an object file
+data/binary_adder.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/2_12_fulladder_cpp.dir/build.make CMakeFiles/2_12_fulladder_cpp.dir/data/binary_adder.cpp.o
+.PHONY : data/binary_adder.cpp.o
+
+data/binary_adder.i: data/binary_adder.cpp.i
+
+.PHONY : data/binary_adder.i
+
+# target to preprocess a source file
+data/binary_adder.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/2_12_fulladder_cpp.dir/build.make CMakeFiles/2_12_fulladder_cpp.dir/data/binary_adder.cpp.i
+.PHONY : data/binary_adder.cpp.i
+
+data/binary_adder.s: data/binary_adder.cpp.s
+
+.PHONY : data/binary_adder.s
+
+# target to generate assembly for a file
+data/binary_adder.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/2_12_fulladder_cpp.dir/build.make CMakeFiles/2_12_fulladder_cpp.dir/data/binary_adder.cpp.s
+.PHONY : data/binary_adder.cpp.s
+
 main.o: main.cpp.o
 
 .PHONY : main.o
@@ -179,6 +206,9 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... 2_12_fulladder_cpp"
+	@echo "... data/binary_adder.o"
+	@echo "... data/binary_adder.i"
+	@echo "... data/binary_adder.s"
 	@echo "... main.o"
 	@echo "... main.i"
 	@echo "... main.s"

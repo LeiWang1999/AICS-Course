@@ -1,1 +1,1 @@
-/usr/bin/c++  -g   CMakeFiles/2_12_fulladder_cpp.dir/main.cpp.o  -o 2_12_fulladder_cpp 
+/usr/bin/c++  -g   CMakeFiles/2_12_fulladder_cpp.dir/main.cpp.o CMakeFiles/2_12_fulladder_cpp.dir/data/binary_adder.cpp.o  -o 2_12_fulladder_cpp 

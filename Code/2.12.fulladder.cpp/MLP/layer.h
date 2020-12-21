@@ -10,7 +10,7 @@
 #include <memory>
 #include <opencv2/core/core.hpp>
 
-#include <easyml/util/activation_function.h>
+#include "../util/activation_function.h"
 
 namespace easyml {
 

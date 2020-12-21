@@ -3,7 +3,7 @@
 // Created by ronny on 16-12-6.
 //
 
-#include <easyml/neural_network/input_layer.h>
+#include "input_layer.h"
 
 namespace easyml {
 namespace nn {

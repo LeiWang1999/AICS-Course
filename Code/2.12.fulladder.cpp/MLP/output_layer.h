@@ -7,9 +7,9 @@
 #define EASYML_NERUALNETWORK_OUTPUT_LAYER_H
 
 
-#include <easyml/common.h>
-#include <easyml/neural_network/layer.h>
-#include <easyml/util/cost_function.h>
+#include "common.h"
+#include "layer.h"
+#include "../util/cost_function.h"
 
 namespace easyml {
 namespace nn {
