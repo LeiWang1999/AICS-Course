@@ -58,6 +58,7 @@ def binary_adder(a,b, carry=0):
     # Iterate through list right to left, calling full_adder each time and
     # inserting the sum each time
     for i in range(len(al)-1,-1,-1):
+        print(i)
         carry,sum = full_adder(carry,al[i],bl[i])
         result.insert(0,sum)
         # print(result)
@@ -75,7 +76,7 @@ def test_binary_adder(a,b, carry):
     print(str(int(a,2)) + " + " + str(int(b,2)) + " = " + str(int(result,2)))
 
 if __name__ == '__main__':
-    a = '1011'
-    b = '1101'
+    a = '1001'
+    b = '0001'
     carry = 0
     test_binary_adder(a, b, carry)

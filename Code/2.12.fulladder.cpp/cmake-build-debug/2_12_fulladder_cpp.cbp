@@ -88,6 +88,12 @@
 		<Unit filename="/home/lei/AICS-Course/Code/2.12.fulladder.cpp/data/binary_adder.h">
 			<Option target="2_12_fulladder_cpp"/>
 		</Unit>
+		<Unit filename="/home/lei/AICS-Course/Code/2.12.fulladder.cpp/data/data_gen.cpp">
+			<Option target="2_12_fulladder_cpp"/>
+		</Unit>
+		<Unit filename="/home/lei/AICS-Course/Code/2.12.fulladder.cpp/data/data_gen.h">
+			<Option target="2_12_fulladder_cpp"/>
+		</Unit>
 		<Unit filename="/home/lei/AICS-Course/Code/2.12.fulladder.cpp/main.cpp">
 			<Option target="2_12_fulladder_cpp"/>
 		</Unit>

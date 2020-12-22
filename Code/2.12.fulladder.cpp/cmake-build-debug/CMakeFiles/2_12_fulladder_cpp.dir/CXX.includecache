@@ -9,14 +9,12 @@
 /home/lei/AICS-Course/Code/2.12.fulladder.cpp/data/binary_adder.cpp
 binary_adder.h
 /home/lei/AICS-Course/Code/2.12.fulladder.cpp/data/binary_adder.h
-
-/home/lei/AICS-Course/Code/2.12.fulladder.cpp/data/binary_adder.h
-string
+climits
 -
 
-/home/lei/AICS-Course/Code/2.12.fulladder.cpp/main.cpp
+/home/lei/AICS-Course/Code/2.12.fulladder.cpp/data/binary_adder.h
 iostream
 -
-data/binary_adder.h
-/home/lei/AICS-Course/Code/2.12.fulladder.cpp/data/binary_adder.h
+string
+-
 

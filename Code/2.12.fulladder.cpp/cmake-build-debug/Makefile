@@ -170,6 +170,33 @@ data/binary_adder.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/2_12_fulladder_cpp.dir/build.make CMakeFiles/2_12_fulladder_cpp.dir/data/binary_adder.cpp.s
 .PHONY : data/binary_adder.cpp.s
 
+data/data_gen.o: data/data_gen.cpp.o
+
+.PHONY : data/data_gen.o
+
+# target to build an object file
+data/data_gen.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/2_12_fulladder_cpp.dir/build.make CMakeFiles/2_12_fulladder_cpp.dir/data/data_gen.cpp.o
+.PHONY : data/data_gen.cpp.o
+
+data/data_gen.i: data/data_gen.cpp.i
+
+.PHONY : data/data_gen.i
+
+# target to preprocess a source file
+data/data_gen.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/2_12_fulladder_cpp.dir/build.make CMakeFiles/2_12_fulladder_cpp.dir/data/data_gen.cpp.i
+.PHONY : data/data_gen.cpp.i
+
+data/data_gen.s: data/data_gen.cpp.s
+
+.PHONY : data/data_gen.s
+
+# target to generate assembly for a file
+data/data_gen.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/2_12_fulladder_cpp.dir/build.make CMakeFiles/2_12_fulladder_cpp.dir/data/data_gen.cpp.s
+.PHONY : data/data_gen.cpp.s
+
 main.o: main.cpp.o
 
 .PHONY : main.o
@@ -209,6 +236,9 @@ help:
 	@echo "... data/binary_adder.o"
 	@echo "... data/binary_adder.i"
 	@echo "... data/binary_adder.s"
+	@echo "... data/data_gen.o"
+	@echo "... data/data_gen.i"
+	@echo "... data/data_gen.s"
 	@echo "... main.o"
 	@echo "... main.i"
 	@echo "... main.s"
