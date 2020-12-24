@@ -13,5 +13,6 @@ CMakeFiles/2_12_fulladder_cpp.dir/data/data_gen.cpp.o: ../data/data_gen.h
 
 CMakeFiles/2_12_fulladder_cpp.dir/main.cpp.o: ../Net/MLP.h
 CMakeFiles/2_12_fulladder_cpp.dir/main.cpp.o: ../data/binary_adder.h
+CMakeFiles/2_12_fulladder_cpp.dir/main.cpp.o: ../data/data_gen.h
 CMakeFiles/2_12_fulladder_cpp.dir/main.cpp.o: ../main.cpp
 

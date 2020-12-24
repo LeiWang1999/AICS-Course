@@ -6,17 +6,37 @@
 
 #IncludeRegexTransform: 
 
-/home/lei/AICS-Course/Code/2.12.fulladder.cpp/Net/MLP.cpp
-MLP.h
-/home/lei/AICS-Course/Code/2.12.fulladder.cpp/Net/MLP.h
-cstddef
-/home/lei/AICS-Course/Code/2.12.fulladder.cpp/Net/cstddef
-random
--
-math.h
--
-
 /home/lei/AICS-Course/Code/2.12.fulladder.cpp/Net/MLP.h
 iostream
 -
+
+/home/lei/AICS-Course/Code/2.12.fulladder.cpp/data/binary_adder.h
+iostream
+-
+string
+-
+
+/home/lei/AICS-Course/Code/2.12.fulladder.cpp/data/data_gen.cpp
+data_gen.h
+/home/lei/AICS-Course/Code/2.12.fulladder.cpp/data/data_gen.h
+binary_adder.h
+/home/lei/AICS-Course/Code/2.12.fulladder.cpp/data/binary_adder.h
+
+/home/lei/AICS-Course/Code/2.12.fulladder.cpp/data/data_gen.h
+vector
+-
+
+/home/lei/AICS-Course/Code/2.12.fulladder.cpp/main.cpp
+iostream
+-
+string
+-
+vector
+-
+data/binary_adder.h
+/home/lei/AICS-Course/Code/2.12.fulladder.cpp/data/binary_adder.h
+data/data_gen.h
+/home/lei/AICS-Course/Code/2.12.fulladder.cpp/data/data_gen.h
+Net/MLP.h
+/home/lei/AICS-Course/Code/2.12.fulladder.cpp/Net/MLP.h
 
