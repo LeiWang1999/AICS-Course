@@ -1,19 +1,50 @@
 //
 // Created by root on 2020/12/21.
 //
-
+#include <vector>
 #include "binary_adder.h"
 #include <climits>
-void half_adder(bool &a, bool &b, bool &carry, bool &sum){
+void half_adder(bool a, bool b, bool &carry, bool &sum){
     sum = a ^ b;
     carry = a & b;
 }
 
-void full_adder(bool &carry_in, bool &a, bool &b, bool &carry, bool &sum){
+void full_adder(bool carry_in, bool a, bool b, bool &carry, bool &sum){
     bool carry1,sum1,carry2;
     half_adder(carry_in,a,carry1,sum1);
     half_adder(sum1,b,carry2, sum);
     carry = carry1 | carry2;
+}
+
+
+std::vector<bool> binary_adder(std::vector<bool> a, std::vector<bool> b, bool carry_in){
+    std::vector<bool> result;
+    uint16_t a_len = a.size();
+    uint16_t b_len = b.size();
+    uint16_t max_len = 0;
+    uint16_t dif = a_len - b_len;
+
+    if (dif>0){
+        // inset 0 to b
+        max_len = a_len;
+        for (uint16_t i = 0; i< dif; i++){
+            b.insert(b.cbegin(), 0);
+        }
+    }else{
+        // inset 0 to a
+        max_len = b_len;
+        for (uint16_t i = 0; i< dif; i++){
+            a.insert(a.cbegin(),0);
+        }
+    }
+    bool carry_out = 0, sum = 0;
+    for (int16_t i = max_len - 1; i >=0 ; i--){
+        full_adder(carry_in, a[i], b[i], carry_out, sum);
+        carry_in = carry_out;
+        result.insert(result.cbegin(), sum);
+    }
+    result.insert(result.cbegin(), carry_out);
+    return result;
 }
 
 std::string binary_adder(std::string a, std::string b, bool carry_in){
