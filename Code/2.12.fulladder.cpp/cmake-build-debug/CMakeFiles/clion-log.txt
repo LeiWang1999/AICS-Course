@@ -1,4 +1,0 @@
-/opt/clion/clion-2020.3/bin/cmake/linux/bin/cmake -DCMAKE_BUILD_TYPE=Debug -G "CodeBlocks - Unix Makefiles" /home/lei/AICS-Course/Code/2.12.fulladder.cpp
--- Configuring done
--- Generating done
--- Build files have been written to: /home/lei/AICS-Course/Code/2.12.fulladder.cpp/cmake-build-debug

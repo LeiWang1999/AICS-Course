@@ -5,7 +5,7 @@
 #ifndef INC_2_12_FULLADDER_CPP_MLP_H
 #define INC_2_12_FULLADDER_CPP_MLP_H
 #include <iostream>
-
+#include <vector>
 template<class dataType>
 class Neuron{
 public:
@@ -22,7 +22,6 @@ public:
     int NumNeurons;
     Neuron<double> * pNeurons;
 };
-
 
 class MLP {
 private:
@@ -43,8 +42,15 @@ private:
 public:
     MLP(int layers, int nodes[]);
     ~MLP();
-    void input(double * input_vector);
+
+    template <class vectorType>
+    void input(vectorType input_vector){
+        for (int i = 0; i < pLayers[0].NumNeurons; i++){
+            pLayers[0].pNeurons[i].output = input_vector[i];
+        }
+    };
     void forward();
+    double get_loss();
     void backward(double * output, double *target);
     double * get_output();
 };

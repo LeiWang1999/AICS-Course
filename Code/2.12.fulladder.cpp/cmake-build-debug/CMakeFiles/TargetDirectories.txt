@@ -1,3 +1,0 @@
-/home/lei/AICS-Course/Code/2.12.fulladder.cpp/cmake-build-debug/CMakeFiles/edit_cache.dir
-/home/lei/AICS-Course/Code/2.12.fulladder.cpp/cmake-build-debug/CMakeFiles/rebuild_cache.dir
-/home/lei/AICS-Course/Code/2.12.fulladder.cpp/cmake-build-debug/CMakeFiles/2_12_fulladder_cpp.dir

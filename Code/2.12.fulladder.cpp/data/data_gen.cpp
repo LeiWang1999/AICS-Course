@@ -10,7 +10,7 @@
 using namespace std;
 
 template <class RandomAccessIterator, class URNG>
-void shuffle (RandomAccessIterator first, RandomAccessIterator last, URNG&& g)
+void _shuffle (RandomAccessIterator first, RandomAccessIterator last, URNG&& g)
 {
     for (auto i = (last-first) - 1; i > 0; --i) {
         uniform_int_distribution<decltype(i)> d (0,i);
@@ -58,7 +58,17 @@ void data_gen(vector<vector<bool>> &batch_input, vector<vector<bool>> &batch_out
     x_gen(batch_input);
     if(is_shuffle){
         unsigned seed = chrono::system_clock::now ().time_since_epoch ().count ();
-        shuffle(batch_input.begin(), batch_input.end(),default_random_engine(seed));
+        _shuffle(batch_input.begin(), batch_input.end(),default_random_engine(seed));
     }
     batch_output = y_gen(batch_input);
+}
+
+void data_split(vector<vector<bool>> &batch_input, vector<vector<bool>> &batch_output,
+        vector<vector<bool>> &train_input, vector<vector<bool>> &train_output,
+        vector<vector<bool>> &test_input, vector<vector<bool>> &test_output, double rate){
+    int offset = batch_input.size() * rate;
+    train_input.assign(batch_input.begin(), batch_input.begin()+offset);
+    test_input.assign(batch_input.begin()+offset, batch_input.end());
+    train_output.assign(batch_output.begin(), batch_output.begin()+offset);
+    test_output.assign(batch_output.begin()+offset, batch_output.end());
 }
