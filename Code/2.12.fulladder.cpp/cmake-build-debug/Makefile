@@ -143,6 +143,33 @@ depend:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/2_12_fulladder_cpp.dir/build.make CMakeFiles/2_12_fulladder_cpp.dir/build
 .PHONY : 2_12_fulladder_cpp/fast
 
+Net/MLP.o: Net/MLP.cpp.o
+
+.PHONY : Net/MLP.o
+
+# target to build an object file
+Net/MLP.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/2_12_fulladder_cpp.dir/build.make CMakeFiles/2_12_fulladder_cpp.dir/Net/MLP.cpp.o
+.PHONY : Net/MLP.cpp.o
+
+Net/MLP.i: Net/MLP.cpp.i
+
+.PHONY : Net/MLP.i
+
+# target to preprocess a source file
+Net/MLP.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/2_12_fulladder_cpp.dir/build.make CMakeFiles/2_12_fulladder_cpp.dir/Net/MLP.cpp.i
+.PHONY : Net/MLP.cpp.i
+
+Net/MLP.s: Net/MLP.cpp.s
+
+.PHONY : Net/MLP.s
+
+# target to generate assembly for a file
+Net/MLP.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/2_12_fulladder_cpp.dir/build.make CMakeFiles/2_12_fulladder_cpp.dir/Net/MLP.cpp.s
+.PHONY : Net/MLP.cpp.s
+
 data/binary_adder.o: data/binary_adder.cpp.o
 
 .PHONY : data/binary_adder.o
@@ -233,6 +260,9 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... 2_12_fulladder_cpp"
+	@echo "... Net/MLP.o"
+	@echo "... Net/MLP.i"
+	@echo "... Net/MLP.s"
 	@echo "... data/binary_adder.o"
 	@echo "... data/binary_adder.i"
 	@echo "... data/binary_adder.s"

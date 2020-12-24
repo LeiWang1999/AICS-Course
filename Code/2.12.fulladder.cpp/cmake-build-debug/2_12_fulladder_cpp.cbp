@@ -82,6 +82,12 @@
 				</MakeCommands>
 			</Target>
 		</Build>
+		<Unit filename="/home/lei/AICS-Course/Code/2.12.fulladder.cpp/Net/MLP.cpp">
+			<Option target="2_12_fulladder_cpp"/>
+		</Unit>
+		<Unit filename="/home/lei/AICS-Course/Code/2.12.fulladder.cpp/Net/MLP.h">
+			<Option target="2_12_fulladder_cpp"/>
+		</Unit>
 		<Unit filename="/home/lei/AICS-Course/Code/2.12.fulladder.cpp/data/binary_adder.cpp">
 			<Option target="2_12_fulladder_cpp"/>
 		</Unit>
