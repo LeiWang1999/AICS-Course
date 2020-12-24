@@ -44,7 +44,7 @@ int main(){
     vector<vector<bool>> batch_input;
     vector<vector<bool>> batch_output;
     data_gen(batch_input, batch_output, true);
-
+    
 //    data_gen_test();
 //    mlp_test();
 
