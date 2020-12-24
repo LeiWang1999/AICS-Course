@@ -14,7 +14,6 @@ void data_gen_test(){
     string result = "0";
     result = binary_adder(a , b, carry);
     cout << result << endl;
-
     vector<bool> v_a = {1,0,0,1};
     vector<bool> v_b = {1};
     vector<bool> v_result;
@@ -41,12 +40,12 @@ void mlp_test(){
 }
 
 int main(){
-//    vector<vector<int>> batch_input;
-//    vector<vector<int>> batch_output;
-//    data_gen(batch_input, batch_output);
+    // generate test data
+    vector<vector<bool>> batch_input;
+    vector<vector<bool>> batch_output;
+    data_gen(batch_input, batch_output, true);
 
-
-    data_gen_test();
+//    data_gen_test();
 //    mlp_test();
 
     return 0;
