@@ -62,3 +62,13 @@ void data_gen(vector<vector<bool>> &batch_input, vector<vector<bool>> &batch_out
     }
     batch_output = y_gen(batch_input);
 }
+
+void data_split(vector<vector<bool>> &batch_input, vector<vector<bool>> &batch_output,
+        vector<vector<bool>> &train_input, vector<vector<bool>> &train_output,
+        vector<vector<bool>> &test_input, vector<vector<bool>> &test_output, double rate){
+    int offset = batch_input.size() * rate;
+    train_input.assign(batch_input.begin(), batch_input.begin()+offset);
+    test_input.assign(batch_input.begin()+offset, batch_input.end());
+    train_output.assign(batch_output.begin(), batch_output.begin()+offset);
+    test_output.assign(batch_output.begin()+offset, batch_output.end());
+}

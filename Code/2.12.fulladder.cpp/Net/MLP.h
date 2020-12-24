@@ -43,8 +43,12 @@ private:
 public:
     MLP(int layers, int nodes[]);
     ~MLP();
+    template <class vectorType>
+    void input(vectorType input_vector);
+    void input(std::vector<bool> input_vector);
     void input(double * input_vector);
     void forward();
+    double get_loss();
     void backward(double * output, double *target);
     double * get_output();
 };

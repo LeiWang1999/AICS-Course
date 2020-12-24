@@ -67,11 +67,23 @@ void MLP::_random_Initialize_weight() {
             // init Neurons params
             for (int k = 0; k< pLayers[i-1].NumNeurons; k++){
                 pLayers[i].pNeurons[j].weight[k] = u(e);
-                pLayers[i].pNeurons[j].weight[k] = 0.0;
             }
         }
     }
     return;
+}
+
+template <class vectorType>
+void MLP::input(vectorType input_vector) {
+    for (int i = 0; i < pLayers[0].NumNeurons; i++){
+        pLayers[0].pNeurons[i].output = input_vector[i];
+    }
+}
+
+void MLP::input(vector<bool> input_vector) {
+    for (int i = 0; i < pLayers[0].NumNeurons; i++){
+        pLayers[0].pNeurons[i].output = input_vector[i];
+    }
 }
 
 void MLP::input(double *input_vector) {
@@ -150,9 +162,12 @@ void MLP::_adjust_weights() {
             }
         }
     }
-    cout << "adjust done " << "current loss is " << _MSE << endl;
 }
 
 double *MLP::get_output() {
     return output;
+}
+
+double MLP::get_loss() {
+    return _MSE;
 }

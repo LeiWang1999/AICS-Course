@@ -43,8 +43,36 @@ int main(){
     // generate test data
     vector<vector<bool>> batch_input;
     vector<vector<bool>> batch_output;
+    vector<vector<bool>> train_input;
+    vector<vector<bool>> train_output;
+    vector<vector<bool>> test_input;
+    vector<vector<bool>> test_output;
     data_gen(batch_input, batch_output, true);
-
+    data_split(batch_input, batch_output,
+            train_input,train_output,
+            test_input, test_output,
+            0.7
+            );
+    // init MLP
+    int num_layers = 4;
+    int num_Neurons[] = {9, 20, 20, 5};
+    int epochs = 200;
+    MLP mlp(num_layers, num_Neurons);
+    for(int epoch = 1; epoch <= epochs; epoch++){
+        cout << "Current Epoch : " << epoch << " Batch Size : " << batch_input.size() ;
+        for (int i = 0; i < train_input.size(); ++i) {
+            double* output = NULL;
+            double target[num_Neurons[num_layers - 1]] ;
+            mlp.input(train_input[i]);
+            mlp.forward();
+            output = mlp.get_output();
+            for (int j = 0; j < num_Neurons[num_layers-1]; ++j) {
+                target[j] = train_output[i][j];
+            }
+            mlp.backward(output, target);
+        }
+        cout << " training loss : " << mlp.get_loss() << endl;
+    }
 //    data_gen_test();
 //    mlp_test();
 
