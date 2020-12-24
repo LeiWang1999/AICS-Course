@@ -11,24 +11,12 @@ MLP.h
 /home/lei/AICS-Course/Code/2.12.fulladder.cpp/Net/MLP.h
 cstddef
 /home/lei/AICS-Course/Code/2.12.fulladder.cpp/Net/cstddef
-iostream
-/home/lei/AICS-Course/Code/2.12.fulladder.cpp/Net/iostream
+random
+-
+math.h
+-
 
 /home/lei/AICS-Course/Code/2.12.fulladder.cpp/Net/MLP.h
-
-/home/lei/AICS-Course/Code/2.12.fulladder.cpp/data/binary_adder.h
 iostream
 -
-string
--
-
-/home/lei/AICS-Course/Code/2.12.fulladder.cpp/main.cpp
-iostream
--
-string
--
-data/binary_adder.h
-/home/lei/AICS-Course/Code/2.12.fulladder.cpp/data/binary_adder.h
-Net/MLP.h
-/home/lei/AICS-Course/Code/2.12.fulladder.cpp/Net/MLP.h
 

@@ -4,17 +4,20 @@
 
 #include "MLP.h"
 #include "cstddef"
-#include "iostream"
+#include <random>
+#include <math.h>
+using namespace std;
 MLP::MLP(int num_layers, int *num_Neurons):
 NumLayers(0),
-pLayers(0)
+pLayers(0),
+dGain(1.0)
 {
     NumLayers = num_layers;
     pLayers = new Layer<double>[NumLayers];
     for (int i = 0; i < NumLayers; i++){
         pLayers[i].bias = 1.0;
         pLayers[i].NumNeurons = num_Neurons[i];
-        pLayers[i].pNeurons = new Neuron<double>[num_Neurons[i]];
+        pLayers[i].pNeurons = new Neuron<double>[pLayers[i].NumNeurons];
         for (int j = 0; j < num_Neurons[i]; j++){
             // init Neurons params
             pLayers[i].pNeurons[j].output = 1.0;
@@ -27,6 +30,7 @@ pLayers(0)
             }
         }
     }
+    _random_Initialize_weight();
 }
 
 MLP::~MLP() {
@@ -45,8 +49,21 @@ MLP::~MLP() {
     delete[] pLayers;
 }
 
+double MLP::_sigmoid(double x) {
+    return 1.0 / (1.0 + exp(-dGain * x));
+}
+
 void MLP::_random_Initialize_weight() {
-    
+    default_random_engine e;
+    uniform_real_distribution<double> u(-1.0, 1.0);
+    for (int i = 1; i < NumLayers; i++){
+        for (int j = 0; j < pLayers[i].NumNeurons; j++){
+            // init Neurons params
+            for (int k = 0; k< pLayers[i-1].NumNeurons; k++)
+            pLayers[i].pNeurons[j].weight[k] = u(e);
+        }
+    }
+    return;
 }
 
 void MLP::input(double *input_vector) {
@@ -68,8 +85,7 @@ void MLP::forward() {
                 out = pLayers[i-1].pNeurons[k].output * pLayers[i].pNeurons[j].weight[k];
                 sum += out;
             }
-            std::cout << "sum : " << sum << std::endl;
-            pLayers[i].pNeurons[j].output = sum;
+            pLayers[i].pNeurons[j].output = _sigmoid(sum);
         }
     }
 }

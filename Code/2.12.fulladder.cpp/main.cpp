@@ -19,6 +19,9 @@ void mlp_test(){
     int num_Neurons[] = {9, 100, 100, 2};
     double input_vector[] = {0, 1, 1, 0, 1, 1, 0, 0, 1};
     MLP mlp(num_layers, num_Neurons);
+
+    // forward test
+
     mlp.input(input_vector);
     mlp.forward();
 }
