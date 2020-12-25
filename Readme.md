@@ -14,7 +14,7 @@
 | Chapter                 | Available?                                                   | Status                                        |
 | ----------------------- | ------------------------------------------------------------ | --------------------------------------------- |
 | 1. 概述                 | :white_check_mark:  [md](https://github.com/LeiWang1999/AICS-Course/blob/master/1.%E6%A6%82%E8%BF%B0.md) | ![](https://img.shields.io/badge/-done-green) |
-| 2. 神经网络基础         | :white_check_mark:  [md](https://github.com/LeiWang1999/AICS-Course/blob/master/2.%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%E5%9F%BA%E7%A1%80.md) | last 2.12                                     |
+| 2. 神经网络基础         | :white_check_mark:  [md](https://github.com/LeiWang1999/AICS-Course/blob/master/2.%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%E5%9F%BA%E7%A1%80.md) | ![](https://img.shields.io/badge/-done-green)                                     |
 | 3.深度学习              |                                                              |                                               |
 | 4.编程框架使用          |                                                              |                                               |
 | 5.编程框架机理          |                                                              |                                               |
