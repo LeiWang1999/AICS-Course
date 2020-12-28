@@ -56,7 +56,7 @@ int main(){
     // init MLP
     int num_layers = 4;
     int num_Neurons[] = {9, 20, 20, 5};
-    int epochs = 200;
+    int epochs = 1000;
     MLP mlp(num_layers, num_Neurons);
     for(int epoch = 1; epoch <= epochs; epoch++){
         cout << "Current Epoch : " << epoch << " Batch Size : " << train_input.size() ;
