@@ -2,7 +2,9 @@
 
 书籍购买地址:https://item.jd.com/12815882.html
 
-因为没有看到书本配套的习题解答，所以自己整理了一下习题的答案（不一定对，如果有错误，欢迎issue指正。
+课程论坛:http://forum.cambricon.com/list-7-1.html
+
+因为没有看到书本配套的习题解答，所以自己整理了一下习题的答案（不一定对
 
 **编写环境**:Typora
 
@@ -14,8 +16,8 @@
 | Chapter                 | Available?                                                   | Status                                        |
 | ----------------------- | ------------------------------------------------------------ | --------------------------------------------- |
 | 1. 概述                 | :white_check_mark:  [md](https://github.com/LeiWang1999/AICS-Course/blob/master/1.%E6%A6%82%E8%BF%B0.md) | ![](https://img.shields.io/badge/-done-green) |
-| 2. 神经网络基础         | :white_check_mark:  [md](https://github.com/LeiWang1999/AICS-Course/blob/master/2.%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%E5%9F%BA%E7%A1%80.md) | ![](https://img.shields.io/badge/-done-green)                                     |
-| 3.深度学习              |                                                              |                                               |
+| 2. 神经网络基础         | :white_check_mark:  [md](https://github.com/LeiWang1999/AICS-Course/blob/master/2.%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%E5%9F%BA%E7%A1%80.md) | ![](https://img.shields.io/badge/-done-green) |
+| 3.深度学习              | 3.12\3.13 last                                               |                                               |
 | 4.编程框架使用          |                                                              |                                               |
 | 5.编程框架机理          |                                                              |                                               |
 | 6.深度学习处理器原理    |                                                              |                                               |
