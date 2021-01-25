@@ -1,0 +1,21 @@
+{% extends "!layout.html" %}
+
+{% block footer %}
+{{ super() }}
+
+<!--Insert version switcher at bottom of sidebar-->
+<script type="text/javascript">
+  var span = document.createElement("SPAN")
+  var span_class = document.createAttribute("class");
+  span_class.value = "version_switcher_placeholder";
+  span.setAttributeNode(span_class);
+  var div = document.createElement("DIV");
+  div.appendChild(span);
+  var nav_div = document.getElementsByClassName("wy-nav-side")[0];
+  nav_div.appendChild(div);
+</script>
+
+<script type="text/javascript"
+    src="{{ pathto('_static/version_switch.js', 1) }}">
+</script>
+{% endblock %}

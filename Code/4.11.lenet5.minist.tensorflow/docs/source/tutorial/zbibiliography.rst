@@ -1,0 +1,5 @@
+=============
+Bibiliography
+=============
+
+.. bibliography:: refs.bib
