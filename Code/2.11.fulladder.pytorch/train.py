@@ -16,7 +16,7 @@ train_y = torch.Tensor(y[:400])
 test_x = torch.Tensor(x[400:])
 test_y = torch.Tensor(y[400:])
 
-epochs = 200
+epochs = 20
 model = MLP(input_dim=9, hidden_1=20, hidden_2=20, output_dim=5)
 loss_function = torch.nn.MSELoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
@@ -68,3 +68,8 @@ for epoch in range(epochs):
               (epoch + 1, running_loss, acc))
 
 print('Finished Training')
+
+torch_out = torch.onnx._export(model, data, "full_adder.onnx", export_params=True, 
+                                opset_version=10,
+                                input_names = ["IMAGE"], output_names = ["Y"],
+                              )
