@@ -1,0 +1,102 @@
+\begin{thebibliography}{13}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{#1}
+\expandafter\ifx\csname urlstyle\endcsname\relax\else
+  \urlstyle{same}\fi
+\expandafter\ifx\csname href\endcsname\relax
+  \DeclareUrlCommand\doi{\urlstyle{rm}}
+  \def\eprint#1#2{#2}
+\else
+  \def\doi#1{\href{https://doi.org/#1}{\nolinkurl{#1}}}
+  \let\eprint\href
+\fi
+
+\bibitem[Hu et~al.(2019)Hu, Liang, Deng, Li, Xie, Ji, Ding, Liu, Sherwood, and
+  Xie]{hu2019neural}
+HU~X, LIANG~L, DENG~L, et~al.
+\newblock Neural network model extraction attacks in edge devices by hearing
+  architectural hints[J].
+\newblock arXiv preprint arXiv:1903.03916, 2019.
+
+\bibitem[Yan et~al.(2020)Yan, Fletcher, and Torrellas]{yan2020cache}
+YAN~M, FLETCHER~C~W, TORRELLAS~J.
+\newblock Cache telepathy: Leveraging shared resource attacks to learn
+  $\{$DNN$\}$ architectures[C]//\allowbreak
+29th $\{$USENIX$\}$ Security Symposium ($\{$USENIX$\}$ Security 20).
+\newblock [S.l.: s.n.], 2020: 2003-2020.
+
+\bibitem[Liu et~al.(2019)Liu, Wang, and Chang]{liu2019vulnerability}
+LIU~W, WANG~S, CHANG~C~H.
+\newblock Vulnerability analysis on noise-injection based hardware attack on
+  deep neural networks[C]//\allowbreak
+2019 Asian Hardware Oriented Security and Trust Symposium (AsianHOST).
+\newblock [S.l.]: IEEE, 2019: 1-6.
+
+\bibitem[Xiang et~al.(2020)Xiang, Chen, Chen, Fang, Hao, Chen, Liu, Wu, Xuan,
+  and Yang]{xiang2020open}
+XIANG~Y, CHEN~Z, CHEN~Z, et~al.
+\newblock Open dnn box by power side-channel attack[J].
+\newblock IEEE Transactions on Circuits and Systems II: Express Briefs, 2020,
+  67\allowbreak (11): 2717-2721.
+
+\bibitem[Yu et~al.(2020)Yu, Ma, Yang, Zhao, and Jin]{yu2020deepem}
+YU~H, MA~H, YANG~K, et~al.
+\newblock Deepem: Deep neural networks model recovery through em side-channel
+  information leakage[C]//\allowbreak
+2020 IEEE International Symposium on Hardware Oriented Security and Trust
+  (HOST).
+\newblock [S.l.]: IEEE, 2020: 209-218.
+
+\bibitem[Batina et~al.(2019)Batina, Bhasin, Jap, and Picek]{batina2019csi}
+BATINA~L, BHASIN~S, JAP~D, et~al.
+\newblock $\{$CSI$\}$$\{$NN$\}$: Reverse engineering of neural network
+  architectures through electromagnetic side channel[C]//\allowbreak
+28th $\{$USENIX$\}$ Security Symposium ($\{$USENIX$\}$ Security 19).
+\newblock [S.l.: s.n.], 2019: 515-532.
+
+\bibitem[Breier et~al.(2021)Breier, Jap, Hou, Bhasin, and Liu]{breier2021sniff}
+BREIER~J, JAP~D, HOU~X, et~al.
+\newblock Sniff: reverse engineering of neural networks with fault attacks[J].
+\newblock IEEE Transactions on Reliability, 2021.
+
+\bibitem[Odetola et~al.(2019)Odetola, Mohammed, and Hasan]{odetola2019stealthy}
+ODETOLA~T~A, MOHAMMED~H~R, HASAN~S~R.
+\newblock A stealthy hardware trojan exploiting the architectural vulnerability
+  of deep learning architectures: Input interception attack (iia)[J].
+\newblock arXiv preprint arXiv:1911.00783, 2019.
+
+\bibitem[Ye et~al.(2018)Ye, Hu, and Li]{ye2018hardware}
+YE~J, HU~Y, LI~X.
+\newblock Hardware trojan in fpga cnn accelerator[C]//\allowbreak
+2018 IEEE 27th Asian Test Symposium (ATS).
+\newblock [S.l.]: IEEE, 2018: 68-73.
+
+\bibitem[Liu et~al.(2020)Liu, Ye, Hu, Li, Li, and Hu]{liu2020sequence}
+LIU~Z, YE~J, HU~X, et~al.
+\newblock Sequence triggered hardware trojan in neural network
+  accelerator[C]//\allowbreak
+2020 IEEE 38th VLSI Test Symposium (VTS).
+\newblock [S.l.]: IEEE, 2020: 1-6.
+
+\bibitem[Rakin et~al.(2019)Rakin, He, and Fan]{rakin2019bit}
+RAKIN~A~S, HE~Z, FAN~D.
+\newblock Bit-flip attack: Crushing neural network with progressive bit
+  search[C]//\allowbreak
+Proceedings of the IEEE/CVF International Conference on Computer Vision.
+\newblock [S.l.: s.n.], 2019: 1211-1220.
+
+\bibitem[Ye et~al.(2019)Ye, Xu, Liu, Cheng, Lambrechts, Zhang, Zhou, Ma, Wang,
+  and Lin]{ye2019adversarial}
+YE~S, XU~K, LIU~S, et~al.
+\newblock Adversarial robustness vs. model compression, or
+  both?[C]//\allowbreak
+Proceedings of the IEEE/CVF International Conference on Computer Vision.
+\newblock [S.l.: s.n.], 2019: 111-120.
+
+\bibitem[Rakin et~al.(2018)Rakin, Yi, Gong, and Fan]{rakin2018defend}
+RAKIN~A~S, YI~J, GONG~B, et~al.
+\newblock Defend deep neural networks against adversarial examples via fixed
+  and dynamic quantized activation functions[J].
+\newblock arXiv preprint arXiv:1807.06714, 2018.
+
+\end{thebibliography}

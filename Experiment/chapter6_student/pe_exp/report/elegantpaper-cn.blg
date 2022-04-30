@@ -1,0 +1,58 @@
+This is BibTeX, Version 0.99d (TeX Live 2021)
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: elegantpaper-cn.aux
+The style file: gbt7714-numerical.bst
+Illegal, another \bibstyle command---line 21 of file elegantpaper-cn.aux
+ : \bibstyle
+ :          {plain}
+I'm skipping whatever remains of this command
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated singl_function (elt_size=4) to 150 items from 100.
+Reallocated wiz_functions (elt_size=4) to 6000 items from 3000.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Database file #1: ref.bib
+You've used 13 entries,
+            5246 wiz_defined-function locations,
+            1074 strings with 10456 characters,
+and the built_in function-call counts, 127960 in all, are:
+= -- 2324
+> -- 15192
+< -- 19058
++ -- 5225
+- -- 897
+* -- 673
+:= -- 17696
+add.period$ -- 39
+call.type$ -- 13
+change.case$ -- 112
+chr.to.int$ -- 4680
+cite$ -- 13
+duplicate$ -- 315
+empty$ -- 882
+format.name$ -- 500
+if$ -- 33267
+int.to.chr$ -- 1
+int.to.str$ -- 14
+missing$ -- 0
+newline$ -- 87
+num.names$ -- 39
+pop$ -- 6678
+preamble$ -- 1
+purify$ -- 13
+quote$ -- 0
+skip$ -- 13534
+stack$ -- 0
+substring$ -- 5762
+swap$ -- 13
+text.length$ -- 267
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 153
+warning$ -- 0
+while$ -- 324
+width$ -- 0
+write$ -- 188
+(There was 1 error message)
