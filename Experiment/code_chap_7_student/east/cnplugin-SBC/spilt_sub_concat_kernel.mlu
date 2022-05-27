@@ -1,0 +1,77 @@
+/*************************************************************************
+ * Copyright (C) [2020] by Cambricon, Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the
+ * "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to
+ * the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *************************************************************************/
+
+// TODO：完成SBC BANGC算子的编写
+
+#include "mlu.h"
+#include "macro.h"
+
+__mlu_entry__ void SBCKernel(half* input_data_, half* output_data_, int batch_num_) {
+    int batch_num = batch_num_;
+
+    /* struct timeval start;
+    struct timeval end;
+    gettimeofday(&start, NULL); */
+    
+    __nram__ half split_sub_concat[HWC_SPLIT];
+    __nram__ half tmp0[192];
+
+    // 多核拆分
+    int core_loop = 16 / taskDim;
+
+    // 循环创建 cycle_sub mask
+    for(int i = 0; i < 192; i++) {
+        tmp0[i * 3] = 123.68;
+        tmp0[i * 3 + 1] = 116.78;
+        tmp0[i * 3 + 2] = 103.94;
+    }
+
+    for(int i = 0; i < batch_num; i ++) {
+        for(int j = 0; j < core_loop; j ++) {
+            // 数据拆分至每个Core的NRAM
+            __memcpy(
+                split_sub_concat, 
+                input_data_ + (j * taskDim + taskId) * HWC_SPLIT + i * DATA_COUNT, 
+                HWC_SPLIT * sizeof(half),
+                GDRAM2NRAM
+            );
+            // cycle_sub代替split+sub
+            __bang_cycle_sub(split_sub_concat, split_sub_concat, tmp0, HWC_SPLIT, 192);
+            // 按顺序拷贝回GDRAM
+            __memcpy(
+                output_data_ + (j * taskDim + taskId) * HWC_SPLIT + i * DATA_COUNT,
+                split_sub_concat,
+                HWC_SPLIT * sizeof(half),
+                NRAM2GDRAM
+            );
+            __sync_all();
+        }
+    }
+
+    // 计算耗时
+    /* gettimeofday(&end, NULL);
+    uint32_t time_usec = (uint32_t)end.tv_usec - (uint32_t)start.tv_usec;
+    printf("Hardware Total Time: %u us\n", time_usec);
+    printf("batch_size: %d us\n", batch_num);
+    printf("core_num: %d us\n", taskDim); */
+}

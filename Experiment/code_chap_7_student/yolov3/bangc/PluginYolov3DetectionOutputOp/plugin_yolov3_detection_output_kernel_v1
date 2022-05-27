@@ -1,0 +1,880 @@
+/*************************************************************************
+ * Copyright (C) [2019] by Cambricon, Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the
+ * "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to
+ * the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *************************************************************************/
+
+#include <sys/time.h>
+#include "mlu.h"
+#include "BANG_LOG.h"
+#include "plugin_yolov3_detection_helper.h"
+#define BUFFER_SIZE 224 * 1024
+
+/*!
+ *  @brief detectionOutputYolov3Kernel.
+ *
+ *  This function generates bounding boxes using
+ *  feature maps from feature-extraction networks
+ *
+ *  @papram[out] predicts
+ *    Output. Bounding boxes params, including batchIdx, classIdx, score,
+ *    x1, y1, x2, y2, and etc.
+ *  @param[in] input0
+ *    Input. The first feature map from previous network.
+ *  @param[in] input1
+ *    Input. The second feature map from previuos network.
+ *    This feature map is optional, depending on the network structure.
+ *  @param[in] input2
+ *    Input. The third feature map from previuos network.
+ *    This feature map is optional, depending on the network structure.
+ *  @param[in] input3
+ *    Input. The fourth feature map from previuos network.
+ *    This feature map is optional, depending on the network structure.
+ *  @param[in] input4
+ *    Input. The fifth feature map from previuos network.
+ *    This feature map is optional, depending on the network structure.
+ *  @param[in] input5
+ *    Input. The sixth feature map from previuos network.
+ *    This feature map is optional, depending on the network structure.
+ *  @param[in] input6
+ *    Input. The seventh feature map from previuos network.
+ *    This feature map is optional, depending on the network structure.
+ *  @param[in] buffer_gdram
+ *    Input. A tmp buffer shared by all ipu-cores assigned to this Op.
+ *    This param is used to store temp data when ct is full and to share
+ *    information, like maximum, among different cores.
+ *  @param[in] h_arr_dgram
+ *    Input. (H)eight of input0~6 tensors accordingly.
+ *  @param[in] w_arr_dgram
+ *    Input. (W)idth of input0~6 tensors accordingly.
+ *  @param[in] imageH_gdram
+ *    Input. (H)eight of input images.
+ *    This param is optional, only enables when CORRECT_ENABLED=true.
+ *  @param[in] imageW_gdram
+ *    Input. (W)idth of input images.
+ *    This param is optional, only enables when CORRECT_ENABLED=true.
+ *  @param[in] bias_gdram
+ *    Input. Biases of anchors used in h/w calculation.
+ *  @param[in] num_inputs
+ *    Input. Num of input tensors.
+ *  @param[in] num_classes
+ *    Input. Num of possible classes of each detected object.
+ *  @param[in] num_batch
+ *    Input. Num of batch, assuming every batch contains only one image.
+ *  @param[in] num_mask_groups
+ *    Input. Num of anchors, assuming same for all input tensors.
+ *  @param[in] num_max_boxes
+ *    Input. The largest possible number of bounding boxes.
+ *  @param[in] PAD_SIZE
+ *    Input. The padsize used for different type of network.
+ *  @param[in] neth
+ *    Input. (H)eight of network input tensor.
+ *  @param[in] netw
+ *    Input. (W)idth of network input tensor.
+ *  @param[in] condidence_thresh
+ *    Input. The minimal threshold for marking a box as an object.
+ *  @param[in] nms_thresh
+ *    Input. The minimal threshold for marking a box as a duplicate.
+ */
+__mlu_entry__ void yolov3Kernel(
+  half* predicts,
+  void* input0,
+  void* input1,
+  void* input2,
+  void* input3,
+  void* input4,
+  void* input5,
+  void* input6,
+  void* buffer_gdram,
+  int* h_arr_gdram,
+  int* w_arr_gdram,
+  #ifdef CORRECT_ENABLED
+  int* imageW_gdram,
+  int* imageH_gdram,
+  #endif
+  half* biases_gdram,
+  int num_inputs,
+  int num_classes,
+  int num_batch,
+  int num_mask_groups,
+  int num_max_boxes,
+  int PAD_SIZE,
+  int netw,
+  int neth,
+  half confidence_thresh,
+  half nms_thresh) {
+  PRINTF_SCALAR("========== taskId: %d ==========\n", taskId);
+
+  // hardware timer
+  #if __BANG_ARCH__ >= 200
+  struct timeval tstart;
+  struct timeval tend;
+  gettimeofday(&tstart, NULL);
+  #endif
+  /*======================== Stage 0: initialization =========================*/
+  /* find limit for the whole process
+   * the Op need to generate 8 kinds of info:
+   *   objectness score: to check whether this bbox contains objects
+   *   x1, y1, x2, y2: four coordinates of the bbox
+   *   class: which class does the object belong to
+   *   prob: the probability that the object belongs to the current class
+   *   batchIdx: which batch does this box belong to
+   * We need 8 * num_mask_groups * hws (hws is the sum of all hw)
+   * We also need 4 * num_mask_groups * hws for IOU calculation and
+   * 4 * num_mask_groups * hws for mask and other temp results.
+   * Hence we need [15 * num_mask_groups * hws] in total. The data flow
+   * looks like the following(unit: number of half):
+   * [temp]: 64
+   * [x][y][w][h][cIdx][prob][bIdx]: 7 * nmg * hws
+   * [tmpSrc]: 7 * nmg * hws, reusable for objMask, post/currMask, and IOU
+   * TODO(yuluwei): find an more effective way to do segmentation
+   */
+
+  // param log info
+  PRINTF_SCALAR("===== param check =====\n");
+  PRINTF_SCALAR("num_inputs: %d\n", num_inputs);
+  PRINTF_SCALAR("num_classes: %d\n", num_classes);
+  PRINTF_SCALAR("num_batch: %d\n", num_batch);
+  PRINTF_SCALAR("num_mask_groups: %d\n", num_mask_groups);
+  PRINTF_SCALAR("num_max_boxes: %d\n", num_max_boxes);
+  PRINTF_SCALAR("PAD_SIZE: %d\n", PAD_SIZE);
+  PRINTF_SCALAR("netw: %d\n", netw);
+  PRINTF_SCALAR("neth: %d\n", neth);
+  PRINTF_SCALAR("confidence_thresh: %hf\n", confidence_thresh);
+  PRINTF_SCALAR("nms_thresh: %hf\n", nms_thresh);
+
+  // load const data, including h/w_arr_gdram, bias_gdram, input ptrs etc.
+  __nram__ int h_arr[16];
+  __nram__ int w_arr[16];
+  __nram__ int imageWs[64];
+  __nram__ int imageHs[64];
+  __nram__ half biases[32];
+  void* inputs[16];
+  inputs[0] = input0;
+  inputs[1] = input1;
+  inputs[2] = input2;
+  inputs[3] = input3;
+  inputs[4] = input4;
+  inputs[5] = input5;
+  inputs[6] = input6;
+  __memcpy(h_arr,
+           h_arr_gdram,
+           16 * sizeof(int), GDRAM2NRAM);
+  __memcpy(w_arr,
+           w_arr_gdram,
+           16 * sizeof(int), GDRAM2NRAM);
+  __memcpy(biases,
+           biases_gdram,
+           32 * sizeof(half), GDRAM2NRAM);
+
+  // find limit
+  // TODO(yuluwei): add find limit functions
+  int maskNum = 0;
+  int boxNum = 0;
+  int segSize = (num_classes + 5) * LINESIZE;
+  int maxhw = 0;
+  for (int i = 0; i < num_inputs; i++) {
+    int hw = PAD_UP(h_arr[i] * w_arr[i], 64);
+    maskNum += hw;
+    maxhw = max(maxhw, hw);
+  }
+
+  /* memory usage
+   * arrange data in an order of life cycle, from long to short
+   * so that important result can be stored with concerning
+   * over-written by other calculation process.
+   */
+  __nram__ half buffer[BUFFER_SIZE];
+  __nram__ int inputBoxCount[32];
+  __nram__ int inputBoxCountPad[32];
+  __bang_write_zero((half*)inputBoxCount, 64);
+  __bang_write_zero((half*)inputBoxCountPad, 64);
+  inputBoxCount[0] = 0;
+  inputBoxCountPad[0] = 0;
+  half* temp    = buffer;
+  half* dst     = temp    + 1024;
+  half* xOffset = dst     + 3584;
+  half* yOffset = xOffset + maxhw;
+  half* outMask = yOffset + maxhw + PAD_SIZE;
+  half* boxMask = outMask + maxhw;
+  half* obj     = boxMask + maskNum * num_mask_groups + PAD_SIZE * 2;
+  int*  dst_num = (int*)dst - 32;
+  dst_num[0] = 0;
+  __bang_write_zero(buffer, BUFFER_SIZE);
+
+  /* multicore-related
+   * In most situations, num_classes % taskDim > 0, which means the last core
+   * will deal with a different number of classes.
+   *
+   * coreClassNum represents the number of class for core[0] ~ core[taskDim - 2]
+   * coreCurrNum represents the number of the current core will do.
+   * When taskId <= taskDim -2, the rest number of class is always larger than
+   * coreClassNum, hence currCoreNum = coreClassNum. Similar for the last one.
+   */
+  int classRemain  = num_classes % taskDim;
+  int coreClassNum = num_classes / taskDim;
+  int currClassNum = coreClassNum + (int)(classRemain > taskId);
+  int start = taskId * coreClassNum + min(taskId, classRemain);
+  int end   = start + currClassNum;
+  half* resultBuffer_gdram;
+  if (taskDim > 1) {
+    resultBuffer_gdram = (half*)buffer_gdram + taskId * (64 + num_batch * 3584);
+  } else {
+    resultBuffer_gdram = predicts;
+  }
+  resultBuffer_gdram[0] = 0;
+
+  PRINTF_VECTOR("----- Buffer_gdram check for taskId 0 -----",
+                "%hf ", (half*)buffer_gdram, 64 + 13 * 7);
+  PRINTF_VECTOR("----- Buffer_gdram check for taskId 1 -----",
+                "%hf ", (half*)buffer_gdram + (64 + 3584), 64 + 13 * 7);
+  /*------------------------ Stage 1: generating mask ------------------------*/
+  /*  This state corresponds to the following section in the src code:
+
+      float objectness = predictions[obj_index];
+      if (objectness <= thresh) continue;
+
+      We cannot use for loop to do this "scalarly"
+      Instead, we must generate a mask to select valid objectness "vectorly"
+      The input tensors have a shape of N(batchNum)C(H*W)H(1)W(classNum), e.g.,
+      N(1) C(26x26 = 256 x "2" + 164) H(1) W(255 = "3" x 85):
+                               C segment  ->
+                             W X0  X1  X2  ...  X255            \
+                             | Y0  Y1  Y2  ...  Y255             \
+                             v W0  W1  W2  ...  W255              \
+                               H0  H1  H2  ...  H255               85 entries
+         obj is needed here -> O0  O1  O2  ...  O255              /
+                               C0  C1  C2  ...  C255 \           /
+                               ..  ..  ..  ...  ..     80 classes
+                               C0  C1  C2  ...  C255 /
+      There will be "2" x "3" = 6 segments in total. The remain part is similar.
+      There will be 3 remain parts, each has a length of PAD_UP(164, PAD_SIZE);
+  */
+  int part_count = 0;
+
+  // TODO(zhouxiaoyong): figure out how to hide the MPU to BANG C user
+  if (coreId != 0x80) {
+  for (int batchId = 0; batchId < num_batch; batchId++) {
+    PRINTF_SCALAR("========== batchId: %d ==========\n", batchId);
+    half new_w = 0;
+    half new_h = 0;
+
+    /* correct_yolobox can be used to maintain HEIGHT/WIDTH ratio according to
+     * the first layer input. However, user could also restore the ratio in cpu
+     * after the NMS step since this should not affect the final result.
+     *
+     * As a result, here we offer this function as an extra "inline" function
+     * controlled by a macro.
+     */
+    #ifdef CORRECT_ENABLED
+    // load imageW/H
+    if (batchId % 64 == 0) {
+      __memcpy(imageWs, imageW_gdram + batchId, 64 * sizeof(int), GDRAM2NRAM);
+      __memcpy(imageHs, imageH_gdram + batchId, 64 * sizeof(int), GDRAM2NRAM);
+    }
+    int imageW = imageWs[batchId % 64];
+    int imageH = imageHs[batchId % 64];
+    PRINTF_SCALAR("imageW: %d\n", imageW);
+    PRINTF_SCALAR("imageH: %d\n", imageH);
+    if (netw * imageH < neth * imageW) {
+      new_w = netw;
+      new_h = (half)imageH / imageW * netw;
+    } else {
+      new_h = neth;
+      new_w = (half)imageW / imageH * neth;
+    }
+    PRINTF_SCALAR("new_w: %hf\n", new_w);
+    PRINTF_SCALAR("new_h: %hf\n", new_h);
+    #endif
+
+    int srcOffset = 0;
+    int dstOffset = 0;
+    int maskCount = 0;
+    int maskCountPad = 0;
+    __nramset_half(temp, 64, confidence_thresh);
+    for (int inputId = 0; inputId < num_inputs; inputId++) {
+      PRINTF_SCALAR("---------- inputId: %d ----------\n", inputId);
+      int hw        = h_arr[inputId] * w_arr[inputId];
+      int hwPad     = PAD_UP(hw, 64);
+      int dealNum   = hwPad * num_mask_groups;
+      int segNum    = hw / LINESIZE;  // change the unit from point to line
+      int remain    = hw % LINESIZE;  // the remaining segment
+      int remainPad = PAD_UP(remain, PAD_SIZE);
+      int dstStride = PAD_UP(remainPad, 64);
+      int remSize   = (num_classes + 5) * remainPad;
+      int batchSize = (num_classes + 5) * hw * num_mask_groups;
+      int srcStride = (num_classes + 5) * hw;
+      half* src     = obj + dealNum + 64;
+
+      // check params for each inputId
+      PRINTF_SCALAR("num_batch: %d\n", num_batch);
+      PRINTF_SCALAR("PAD_SIZE: %d\n", PAD_SIZE);
+      PRINTF_SCALAR("segNum: %d\n", segNum);
+      PRINTF_SCALAR("segSize: %d\n", segSize);
+      PRINTF_SCALAR("remain: %d\n", remain);
+      PRINTF_SCALAR("remainPad: %d\n", remainPad);
+      PRINTF_SCALAR("remSize: %d\n", remSize);
+      PRINTF_SCALAR("h: %d\n", h_arr[inputId]);
+      PRINTF_SCALAR("w: %d\n", w_arr[inputId]);
+      PRINTF_SCALAR("hw: %d\n", hw);
+      PRINTF_SCALAR("hwPad: %d\n", hwPad);
+      PRINTF_SCALAR("dealNum: %d\n", dealNum);
+
+      __bang_write_zero(src, dealNum);
+      if (segNum > 0) {
+        for (int segId = 0; segId < segNum; segId++) {
+          int offset_src = batchId * batchSize + segId * LINESIZE;
+          int offset_dst = segId * num_mask_groups * LINESIZE;
+          strideLoad(
+            src + offset_dst,
+            ((half*)inputs[inputId]) + offset_src + 4 * hw,
+            LINESIZE * sizeof(half),
+            LINESIZE,
+            srcStride,
+            num_mask_groups);
+        }
+      }
+      if (remain > 0) {
+        int offset_src = batchId * batchSize + segNum * LINESIZE;
+        int offset_dst = segNum * num_mask_groups * LINESIZE;
+        strideLoad(
+          src + offset_dst,
+          ((half*)inputs[inputId]) + offset_src + 4 * hw,
+          remain * sizeof(half),
+          dstStride,
+          srcStride,
+          num_mask_groups);
+        int padNum = dstStride - remain;
+
+        for (int maskGroup = 0; maskGroup < num_mask_groups; maskGroup++) {
+          for (int pad = 0; pad < padNum; pad++) {
+            src[offset_dst + dstStride * maskGroup + remain + pad] = -999;
+          }
+        }
+      }
+
+      PRINTF_VECTOR("---------- obj before sigmoid ----------",
+                    "%hf ", src, dealNum);
+      __bang_active_sigmoid(src, src, dealNum);
+      PRINTF_VECTOR("---------- obj after sigmoid ----------",
+                    "%hf ", src, dealNum);
+
+      __bang_cycle_gt(boxMask + srcOffset, src, temp, dealNum, 64);
+      uint32_t* countPtr = (uint32_t*)temp + 64;
+      __bang_count(countPtr,
+                   boxMask + srcOffset,
+                   dealNum);
+      inputBoxCount[inputId + 1] = countPtr[0];
+      inputBoxCountPad[inputId + 1] = PAD_UP(countPtr[0], 64);
+      maskCount += inputBoxCount[inputId + 1];
+      maskCountPad += inputBoxCountPad[inputId + 1];
+
+      __bang_collect(obj + dstOffset, src, boxMask + srcOffset, dealNum);
+
+      srcOffset += dealNum;
+      dstOffset += inputBoxCountPad[inputId + 1];
+    }
+
+    /*----------------------- Stage 2: get yolo boxes ------------------------*/
+    /* This stage corresponds the function get_yolo_box() in cpu implementations
+     * We will use "boxMask" generated in Stage 1 to remove useless boxes
+     * so that the amount of computation in the next stage(nms) can be minimized
+     */
+    // check result for State 1
+    PRINTF_SCALAR("maskCount: %d\n", maskCount);
+    PRINTF_SCALAR("maskCountPad: %d\n", maskCountPad);
+
+    // if no box detected, go to next batch
+    // Otherwise rearrange memory usage accordingly
+    if (maskCount == 0)
+      continue;
+    half* x        = obj      + maskCountPad;
+    half* y        = x        + maskCountPad;
+    half* w        = y        + maskCountPad;
+    half* h        = w        + maskCountPad;
+    half* src      = h        + maskCountPad;
+    __bang_write_zero(x, maskCountPad * 5);
+    half* dataPtr;
+    half* offsetPtr;
+    srcOffset = 0;
+    dstOffset = 0;
+    __bang_write_zero(xOffset, PAD_UP(maxhw, PAD_SIZE));
+    __bang_write_zero(yOffset, PAD_UP(maxhw, PAD_SIZE));
+    for (int inputId = 0; inputId < num_inputs; inputId++) {
+      int hw = h_arr[inputId] * w_arr[inputId];
+      int hwPad = PAD_UP(hw, 64);
+      int dealNum = hwPad * num_mask_groups;
+      if (inputBoxCount[inputId + 1] <= 0) {
+        srcOffset += dealNum;
+        continue;
+      }
+      generateOffset(xOffset, yOffset,
+                     h_arr[inputId], w_arr[inputId]);
+      int segNum = hw / LINESIZE;
+      int remain  = hw % LINESIZE;     // the remaining segment
+      int remainPad = PAD_UP(remain, PAD_SIZE);
+      int remSize = (num_classes + 5) * remainPad;
+
+      PRINTF_SCALAR("  PAD_SIZE: %d\n", PAD_SIZE);
+      PRINTF_SCALAR("  dealNum: %d\n", dealNum);
+      PRINTF_SCALAR("  segNum: %d\n", segNum);
+      PRINTF_SCALAR("  remain: %d\n", remain);
+      PRINTF_SCALAR("  remainPad: %d\n", remainPad);
+      PRINTF_SCALAR("  remSize: %d\n", remSize);
+      PRINTF_VECTOR("----- xOffset -----",
+                    "%hf ", xOffset, 256);
+      PRINTF_VECTOR("----- yOffset -----",
+                    "%hf ", yOffset, 256);
+
+      // load x
+      loadEntry(
+      x, src, inputs,
+      w_arr, biases, boxMask, xOffset, temp,
+      hw, segNum, remainPad, remainPad, num_batch,
+      dealNum, num_mask_groups, segSize, remSize,
+      srcOffset, dstOffset, batchId, inputId, 0,
+      maskCountPad, netw, new_w);
+
+      // load y
+      loadEntry(
+      y, src, inputs,
+      h_arr, biases, boxMask, yOffset, temp,
+      hw, segNum, remainPad, remainPad, num_batch,
+      dealNum, num_mask_groups, segSize, remSize,
+      srcOffset, dstOffset, batchId, inputId, 1,
+      maskCountPad, neth, new_h);
+
+      // load w
+      loadEntry(
+      w, src, inputs,
+      w_arr, biases, boxMask, xOffset, temp,
+      hw, segNum, remainPad, remainPad, num_batch,
+      dealNum, num_mask_groups, segSize, remSize,
+      srcOffset, dstOffset, batchId, inputId, 2,
+      maskCountPad, netw, new_w);
+
+      // load h
+      loadEntry(
+      h, src, inputs,
+      h_arr, biases, boxMask, yOffset, temp,
+      hw, segNum, remainPad, remainPad, num_batch,
+      dealNum, num_mask_groups, segSize, remSize,
+      srcOffset, dstOffset, batchId, inputId, 3,
+      maskCountPad, neth, new_h);
+
+      // update mask for the current input
+      for (int j = 0; j < inputBoxCountPad[inputId + 1]; j++) {
+        outMask[dstOffset + j] = (int)(j < inputBoxCount[inputId + 1]);
+      }
+
+      // fix offset for next input
+      srcOffset += dealNum;
+      dstOffset += inputBoxCountPad[inputId + 1];
+    }
+
+    // check Stage 2 result
+    PRINTF_SCALAR("========== maskCount: %d ==========\n", maskCount);
+    PRINTF_VECTOR("---------- obj ----------",
+                  "%hf ", obj, maskCountPad);
+    PRINTF_VECTOR("---------- x ----------",
+                  "%hf ", x, maskCountPad);
+    PRINTF_VECTOR("---------- y ----------",
+                  "%hf ", y, maskCountPad);
+    PRINTF_VECTOR("---------- w ----------",
+                  "%hf ", w, maskCountPad);
+    PRINTF_VECTOR("---------- h ----------",
+                  "%hf ", h, maskCountPad);
+
+    // x, y, w, h -> x1, y1, x2, y2 for IOU calculation
+    // Here x, y are central coordinates
+    half* x1 = x;
+    half* y1 = y;
+    half* x2 = w;
+    half* y2 = h;
+    __bang_mul_const(w, w, 0.5, maskCountPad);
+    __bang_mul_const(h, h, 0.5, maskCountPad);
+    __bang_sub(x1, x1, w, maskCountPad);
+    __bang_sub(y1, y1, h, maskCountPad);
+
+    __bang_mul_const(w, w, 2, maskCountPad);
+    __bang_mul_const(h, h, 2, maskCountPad);
+    __bang_add(x2, x1, w, maskCountPad);
+    __bang_add(y2, y1, h, maskCountPad);
+    __nramset_half(temp, 64, 1.0 / netw);
+    __bang_cycle_add(x2, x2, temp, maskCountPad, 64);
+    __nramset_half(temp, 64, 1.0 / neth);
+    __bang_cycle_add(y2, y2, temp, maskCountPad, 64);
+
+    // mult scale to preserve accuracy
+    __nramset_half(temp, 64, 10);
+    __bang_active_relu(x1, x1, maskCountPad);
+    __bang_active_relu(x2, x2, maskCountPad);
+    // __bang_cycle_mul(x1, x1, temp, maskCountPad, 64);
+    // __bang_cycle_mul(x2, x2, temp, maskCountPad, 64);
+    // __bang_cycle_mul(y1, y1, temp, maskCountPad, 64);
+    // __bang_cycle_mul(y2, y2, temp, maskCountPad, 64);
+
+    // check Stage 2 result after coordinates conversion
+    PRINTF_VECTOR("---------- x1 ----------",
+                  "%hf ", x1, maskCountPad);
+    PRINTF_VECTOR("---------- y1 ----------",
+                  "%hf ", y1, maskCountPad);
+    PRINTF_VECTOR("---------- x2 ----------",
+                  "%hf ", x2, maskCountPad);
+    PRINTF_VECTOR("---------- y2 ----------",
+                  "%hf ", y2, maskCountPad);
+
+    /*------------------------ Stage 3: nms by class -------------------------*/
+    /* This Stage is based on the nms function in CPU implementations.
+     * We perform NMS operation for each class assuming all classes share the
+     * same coords data accordingly.
+    */
+    /*------------------------ Stage 3.1: preprocess -------------------------*/
+    half* x1_star    = h          + maskCountPad;
+    half* y1_star    = x1_star    + maskCountPad;
+    half* x2_star    = y1_star    + maskCountPad;
+    half* y2_star    = x2_star    + maskCountPad;
+    half* classMask  = y2_star    + maskCountPad;
+    half* target     = classMask  + maskCountPad;
+    half* targetCopy = target     + maskCountPad;
+    half* validClass = targetCopy + maskCountPad;
+          src        = validClass + maskCountPad;
+    int maskNumPad = PAD_UP(maskCount, 64);
+    for (int classId = start; classId < end; classId++) {
+      srcOffset = 0;
+      dstOffset = 0;
+      PRINTF_SCALAR("========== classId: %d ==========\n", classId);
+
+      for (int inputId = 0; inputId < num_inputs; inputId++) {
+        int hw = h_arr[inputId] * w_arr[inputId];
+        int hwPad = PAD_UP(hw, 64);
+        int dealNum = hwPad * num_mask_groups;
+        int segNum = hw / LINESIZE;
+        int remain  = hw % LINESIZE;
+        int remainPad = PAD_UP(remain, PAD_SIZE);
+        int dstStride = PAD_UP(remain, 64);
+        int remSize = (num_classes + 5) * remainPad;
+        int batchSize = (num_classes + 5) * hw * num_mask_groups;
+        int srcStride = (num_classes + 5) * hw;
+
+        // load prob for the currrent class
+        if (segNum > 0) {
+          for (int segId = 0; segId < segNum; segId++) {
+            int offset_src = batchId * batchSize + segId * LINESIZE;
+            int offset_dst = segId * num_mask_groups * LINESIZE;
+            strideLoad(
+              src + offset_dst,
+              ((half*)inputs[inputId]) + offset_src + (classId + 5) * hw,
+              LINESIZE * sizeof(half),
+              LINESIZE,
+              srcStride,
+              num_mask_groups);
+          }
+        }
+        if (remain > 0) {
+          int offset_src = batchId * batchSize + segNum * LINESIZE;
+          int offset_dst = segNum * num_mask_groups * LINESIZE;
+          strideLoad(
+            src + offset_dst,
+            ((half*)inputs[inputId]) + offset_src + (classId + 5) * hw,
+            remain * sizeof(half),
+            dstStride,
+            srcStride,
+            num_mask_groups);
+        }
+        int boxNum = inputBoxCountPad[inputId + 1];
+        __bang_collect(target + dstOffset, src, boxMask + srcOffset, dealNum);
+
+        srcOffset += dealNum;
+        dstOffset += inputBoxCountPad[inputId + 1];
+      }
+      __bang_active_sigmoid(target, target, maskCountPad);
+      __bang_mul(targetCopy, target, obj, maskCountPad);
+      __bang_mul(target, target, obj, maskCountPad);
+      // PRINTF_VECTOR("----- target prob -----",
+      //               "%hf ", target, maskCountPad);
+
+      for (int confIdx = 0; confIdx < maskCount; confIdx++) {
+        __bang_max(temp, targetCopy, maskCountPad);
+        uint32_t maxIdx = ((uint16_t*)temp)[1];
+        targetCopy[maxIdx] = -999;
+
+        if (temp[0] <= confidence_thresh) {
+          break;
+        } else {
+          if (target[maxIdx] <= confidence_thresh)
+            continue;
+          PRINTF_SCALAR("----- NMS param check -----\n");
+          PRINTF_SCALAR("maxIndex: %d\n", maxIdx);
+          PRINTF_SCALAR("maxScore: %hf\n", temp[0]);
+          PRINTF_SCALAR("maxScore: %hf\n", target[maxIdx]);
+          PRINTF_SCALAR("classIndex: %d\n", classId);
+          PRINTF_SCALAR("DO NMS ...\n\n");
+
+          // PRINTF_VECTOR("----- targetCopy prob -----",
+          //               "%hf ", targetCopy, maskCountPad);
+
+          // save result for maxIdx
+          int boxOffset = dst_num[0] * 7;
+          dst_num[0] += 1;
+          dst[boxOffset + 0] = batchId;
+          dst[boxOffset + 1] = classId;
+
+          // confidence
+          dst[boxOffset + 2] = target[maxIdx];
+
+          // x1
+          dst[boxOffset + 3] = x1[maxIdx];
+
+          // y1
+          dst[boxOffset + 4] = y1[maxIdx];
+
+          // x2
+          dst[boxOffset + 5] = x2[maxIdx] - (1.0 / netw);
+
+          // y2
+          dst[boxOffset + 6] = y2[maxIdx] - (1.0 / neth);
+
+          // uint32_t maxIdx = *((uint32_t*)(temp + 1));
+          half secondArea = (x2[maxIdx] - x1[maxIdx] + (half)0.0 / (half)netw)
+                          * (y2[maxIdx] - y1[maxIdx] + (half)0.0 / (half)neth);
+
+          /*---------------------- Stage 3.2: compute IOU ------------------------*/
+          // use coordinates of maxIdx to process the rest boxes
+
+          // find max(x1, x1_star)
+          __nramset_half(temp, 64, x1[maxIdx]);
+          __bang_cycle_sub(x1_star, x1, temp, maskCountPad, 64);
+          __bang_active_relu(x1_star, x1_star, maskCountPad);
+          __bang_cycle_add(x1_star, x1_star, temp, maskCountPad, 64);
+
+          // fing min(x2, x2_star)
+          __nramset_half(temp, 64, x2[maxIdx]);
+          __bang_write_zero(x2_star, maskCountPad);
+          __bang_cycle_add(x2_star, x2_star, temp, maskCountPad, 64);
+          __bang_sub(x2_star, x2, x2_star, maskCountPad);
+          __bang_active_relu(x2_star, x2_star, maskCountPad);
+          __bang_sub(x2_star, x2, x2_star, maskCountPad);
+
+          // compute interW
+          // __nramset_half(temp, 64, (half)1.0 / (half)netw);
+          __bang_sub(x1_star, x2_star, x1_star, maskCountPad);
+          // __bang_cycle_add(x1_star, x1_star, temp, maskCountPad, 64);
+          __bang_active_relu(x1_star, x1_star, maskCountPad);
+
+          // find max(y1, y1_star)
+          __nramset_half(temp, 64, y1[maxIdx]);
+          __bang_cycle_sub(y1_star, y1, temp, maskCountPad, 64);
+          __bang_active_relu(y1_star, y1_star, maskCountPad);
+          __bang_cycle_add(y1_star, y1_star, temp, maskCountPad, 64);
+
+          // fing min(y2, y2_star)
+          __nramset_half(temp, 64, y2[maxIdx]);
+          __bang_write_zero(y2_star, maskCountPad);
+          __bang_cycle_add(y2_star, y2_star, temp, maskCountPad, 64);
+          __bang_sub(y2_star, y2, y2_star, maskCountPad);
+          __bang_active_relu(y2_star, y2_star, maskCountPad);
+          __bang_sub(y2_star, y2, y2_star, maskCountPad);
+
+          // compute interH
+          // __nramset_half(temp, 64, (half)1.0 / (half)netw);
+          __bang_sub(y1_star, y2_star, y1_star, maskCountPad);
+          // __bang_cycle_add(y1_star, y1_star, temp, maskCountPad, 64);
+          __bang_active_relu(y1_star, y1_star, maskCountPad);
+
+          // IOU
+          // intersection
+          __bang_mul(x1_star, x1_star, y1_star, maskCountPad);
+
+          // firstArea
+          __bang_sub(y1_star, x2, x1, maskCountPad);
+          __bang_sub(x2_star, y2, y1, maskCountPad);
+          __bang_mul(x2_star, x2_star, y1_star, maskCountPad);
+          __nramset_half(temp, 64, secondArea);
+          __bang_cycle_add(x2_star, x2_star, temp, maskCountPad, 64);
+
+          // union
+          __bang_sub(x2_star, x2_star, x1_star, maskCountPad);
+
+          // iou
+          __nramset_half(temp, 64, nms_thresh);
+          __bang_cycle_mul(x2_star, x2_star, temp, maskCountPad, 64);
+
+          /*------------------ Stage 3.3: erase invalid target -------------------*/
+          // PRINTF_VECTOR("----- Intersection -----",
+          //               "%hf ", x1_star, maskCountPad);
+          // PRINTF_VECTOR("----- union * nms_thresh -----",
+          //               "%hf ", x2_star, maskCountPad);
+
+          // generate a mask based on intersection <= union * nms_thresh
+          __bang_lt(classMask, x1_star, x2_star, maskCountPad);
+
+          // PRINTF_VECTOR(" ----- classMask check -----",
+          //               "%hf ", classMask, maskCountPad);
+
+          // use this mask to update target && target Copy
+          __bang_mul(targetCopy, targetCopy, classMask, maskCountPad);
+          __bang_mul(target, target, classMask, maskCountPad);
+
+          // PRINTF_VECTOR(" ----- target update -----",
+          //               "%hf ", target, maskCountPad);
+          // PRINTF_VECTOR(" ----- targetCopy update -----",
+          //               "%hf ", targetCopy, maskCountPad);
+        }
+      }
+      __nramset_half(temp, 64, confidence_thresh);
+      __bang_cycle_gt(classMask, target, temp, maskCountPad, 64);
+      __bang_count((unsigned int*)temp, classMask, maskCountPad);
+      int currCount = ((unsigned int*)temp)[0];
+      /*------------------ Stage 3.4: save to dst -------------------*/
+      half* tempDst = dst + dst_num[0] * 7;
+      // batchId && classId
+      for (int boxIdx = 0; boxIdx < currCount; boxIdx++) {
+        tempDst[boxIdx * 7 + 0] = batchId;
+        tempDst[boxIdx * 7 + 1] = classId;
+      }
+      // confidence
+      __bang_collect(x1_star, target, classMask, maskCountPad);
+      for (int boxIdx = 0; boxIdx < currCount; boxIdx++) {
+        tempDst[boxIdx * 7 + 2] = x1_star[boxIdx];
+      }
+      // x1
+      __bang_collect(x1_star, x1, classMask, maskCountPad);
+      for (int boxIdx = 0; boxIdx < currCount; boxIdx++) {
+        tempDst[boxIdx * 7 + 3] = x1_star[boxIdx];
+      }
+      // y1
+      __bang_collect(x1_star, y1, classMask, maskCountPad);
+      for (int boxIdx = 0; boxIdx < currCount; boxIdx++) {
+        tempDst[boxIdx * 7 + 4] = x1_star[boxIdx];
+      }
+      // x2
+      __bang_collect(x1_star, x2, classMask, maskCountPad);
+      for (int boxIdx = 0; boxIdx < currCount; boxIdx++) {
+        tempDst[boxIdx * 7 + 5] = x1_star[boxIdx];
+      }
+      // y2
+      __bang_collect(x1_star, y2, classMask, maskCountPad);
+      for (int boxIdx = 0; boxIdx < currCount; boxIdx++) {
+        tempDst[boxIdx * 7 + 6] = x1_star[boxIdx];
+      }
+      dst_num[0] += currCount;
+
+      if (dst_num[0] > 256) {
+        __memcpy(resultBuffer_gdram + part_count * 1792 + 64, dst, 3584, NRAM2GDRAM);
+        part_count++;
+        dst_num[0] -= 256;
+        __memcpy(dst, dst + 1792, 3584, NRAM2NRAM);
+      }
+      PRINTF_SCALAR("nms result count: %d\n", dst_num[0]);
+      PRINTF_VECTOR("----- nms result check -----",
+                    "%hf ", dst, dst_num[0] * 7);
+    }
+    __bang_write_zero(obj, maskCountPad);
+  }
+  }
+  if (dst_num[0] > 0) {
+    int dstNumPad = PAD_UP(dst_num[0], 64);
+    __memcpy(resultBuffer_gdram + part_count * 1792 + 64,
+             dst,
+             7 * dstNumPad * sizeof(half),
+             NRAM2GDRAM);
+  }
+  dst_num[0] += part_count * 256;
+  resultBuffer_gdram[0] = (half)dst_num[0];
+
+  // PRINTF_VECTOR("===== Buffer_gdram check for taskId 0 =====",
+  //               "%hf ", (half*)buffer_gdram, 64 + 13 * 7);
+  // PRINTF_VECTOR("===== Buffer_gdram check for taskId 1 =====",
+  //               "%hf ", (half*)buffer_gdram + (64 + 3584), 64 + 13 * 7);
+
+  __sync_all();
+  if (taskDim > 1 && taskId == taskDim - 1) {
+    // read boxNum from each core
+    half* totalBoxNum = xOffset;
+    half* boxNums     = totalBoxNum + 32;
+    int*  boxDataPad  = (int*)boxNums + 32;
+    int   totalBoxDataPad = 0;
+    for (int i = 0; i < taskDim; i++) {
+      half* dstPtr = (half*)buffer_gdram + i * (64 + num_batch * 3584);
+      boxNums[i]    = dstPtr[0];
+      totalBoxNum[0] += boxNums[i];
+
+      PRINTF_SCALAR("%hf \n", boxNums[i]);
+
+      boxDataPad[i] = PAD_UP((int)boxNums[i] * 7, 64);
+      totalBoxDataPad += boxDataPad[i];
+    }
+
+    if (totalBoxNum[0] > 0) {
+      half* totalBox    = (half*)boxDataPad + 64;
+      half* totalMask   = totalBox + totalBoxDataPad;
+      half* tmpDst      = totalBox;
+      half* tmpMask     = totalMask;
+
+      PRINTF_SCALAR("totalBoxDataPad: %d\n", totalBoxDataPad);
+
+      __bang_write_zero(totalMask, totalBoxDataPad);
+      __nramset_half(temp, 64, 1);
+      __bang_cycle_add(totalMask, totalMask, temp, totalBoxDataPad, 64);
+      int collectNeeded = 0;
+      for (int i = 0; i < taskDim; i++) {
+        half* dstPtr = (half*)buffer_gdram + i * (64 + num_batch * 3584);
+        half coreBoxNum = boxNums[i];
+
+        PRINTF_SCALAR("taskId: %d\n", i);
+
+        if (coreBoxNum > 0) {
+          collectNeeded++;
+          int coreBoxDataPad = PAD_UP((int)coreBoxNum * 7, 64);
+
+          PRINTF_SCALAR("coreBoxNum: %hf\n", coreBoxNum);
+          PRINTF_SCALAR("coreBoxDataPad: %d\n", coreBoxDataPad);
+
+          __memcpy(tmpDst, dstPtr + 64, coreBoxDataPad * sizeof(half), GDRAM2NRAM);
+          for (int j = coreBoxDataPad - 1; j >= (int)coreBoxNum * 7; j--) {
+            tmpMask[j] = 0;
+
+            PRINTF_SCALAR("Padded boxIdx  %d\n", j);
+          }
+          tmpDst  += coreBoxDataPad;
+          tmpMask += coreBoxDataPad;
+        }
+      }
+
+      PRINTF_SCALAR("totalBoxDataPad: %d\n", totalBoxDataPad);
+
+      if (collectNeeded > 1) {
+        __bang_collect(totalBox, totalBox, totalMask, totalBoxDataPad);
+      }
+
+      __memcpy(predicts + 64, totalBox, totalBoxDataPad * sizeof(half), NRAM2GDRAM);
+    }
+    predicts[0] = totalBoxNum[0];
+  }
+
+  #if __BANG_ARCH__ >= 200
+  gettimeofday(&tend, NULL);
+  uint32_t time_usec = (uint32_t)tend.tv_usec - (uint32_t)tstart.tv_usec;
+  uint32_t time_sec = (uint32_t)tend.tv_sec - (uint32_t)tstart.tv_sec;
+  // printf("Hardware Total Time: %.3f ms\n", time_usec / 1000.0);  // FIXME
+  printf("Hardware Total Time: %u us\n", time_usec);
+  #endif
+}

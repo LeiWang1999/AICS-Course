@@ -1,0 +1,105 @@
+/*************************************************************************
+ * Copyright (C) [2020] by Cambricon, Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the
+ * "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to
+ * the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *************************************************************************/
+
+// TODO：完成BatchMatMulV2 BCL算子的编写
+#define SRAM_BUFFER_SIZE (2 * 1024 * 1024 - 64 * 4)
+#define NRAM_BUFFER_SIZE 224 * 1024
+
+
+// 入口函数
+__mlu_entry__ void BatchMatMulV2Kernel_MLU270_half(
+    void* left_ddr,         // GDRAM上的左矩阵
+    void* right_ddr,        // GDRAM上的右矩阵
+    void* dst_ddr,          // GDRAM上的输出矩阵
+    int dim_0,              // 输入维度，左右矩阵的第一维
+    int dim_1,              // 输入维度，左右矩阵的第二维
+    int m,                  // 输入维度，左矩阵的第三维
+    int n,                  // 输入维度，右矩阵的第四维
+    int k,                  // 输入维度，左矩阵的第四维，右矩阵的第三维
+    float scale_0,          // 左矩阵的量化scale参数
+    int pos_0,              // 左矩阵的量化pos参数
+    int scale_1,            // 右矩阵的量化scale参数
+    int pos_1               // 右矩阵的量化pos参数
+) {
+
+}
+
+// 主要计算流程函数
+template<typename IT, typename FT>
+__mlu_func__ void int_matmul_wrap(
+    IT* nram_buf,           // NRAM上开辟的用于计算的空间
+    IT* wram_buf,           // WRAM上开辟的用于计算的空间
+    IT* sram_buf            // SRAM上开辟的用于计算的空间
+) {
+
+}
+
+// 将左矩阵拷贝纸NRAM上
+template<typename T>
+__mlu_func__ void load_left() (
+
+) {
+
+}
+
+// m, n拆分策略函数
+__mlu_func__ void SegStrategyByFactor(
+    int factor,             // 预设的n的拆分倍数
+    int k_up,               // k维度进行64位对其的结果
+    int byteit,             // 输入数据类型的字节数
+    int byteft,             // 输出数据类型的字节数
+    int &work_m,            // （输出）拆分后每次读取的m值
+    int &work_n             // （输出）拆分后每次读取的n值
+) {
+
+}
+
+// 最大空间的m,n拆分策略函数
+__mlu_func__ void SegStrategyByMaxCo(
+
+) {
+
+}
+
+// 将右矩阵拷贝纸NRAM上
+template<typename T>
+__mlu_func__ void load_right() (
+    T* right_inchip,        // WRAM上的最大空间
+    T* right_ddr,           // GDRAM上的右矩阵
+    T* nram_buf,            // 临时NRAM空间，用于量化右矩阵
+    int n_in_nram           // 根据k_up计算出的NRAM上的剩余空间一次所能计算的最大n值
+) {
+
+}
+
+// 计算卷积，得到MatMul的结果
+template<typename IT, typename FT>
+__mlu_func__ void compute(
+    FT *dst,                // 存放结果的NRAM空间
+    IT *left,               // 存放在NRAM上的左矩阵
+    IT *right,              // 存放在WRAM上的右矩阵
+    FT recip_scale,         // 量化scale参数
+    int pos                 // 量化pos参数
+) {
+
+}
